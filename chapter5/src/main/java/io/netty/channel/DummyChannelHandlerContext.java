@@ -16,7 +16,7 @@ public class DummyChannelHandlerContext extends AbstractChannelHandlerContext {
     public DummyChannelHandlerContext(DefaultChannelPipeline pipeline,
                                       EventExecutor executor,
                                       String name, boolean inbound, boolean outbound) {
-        super(pipeline, executor, name, inbound, outbound);
+        super(pipeline, executor, "test", inbound, outbound);
     }
 
     @Override

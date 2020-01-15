@@ -50,6 +50,7 @@ import static io.netty.channel.DummyChannelHandlerContext.DUMMY_INSTANCE;
 public class ByteBufExamples {
     private final static Random random = new Random();
     private static final ByteBuf BYTE_BUF_FROM_SOMEWHERE = Unpooled.buffer(1024);
+//    private static final ByteBuf BYTE_BUF_FROM_SOMEWHERE = Unpooled.directBuffer(1024);
     private static final Channel CHANNEL_FROM_SOMEWHERE = new NioSocketChannel();
     private static final ChannelHandlerContext CHANNEL_HANDLER_CONTEXT_FROM_SOMEWHERE = DUMMY_INSTANCE;
     /**
@@ -58,9 +59,21 @@ public class ByteBufExamples {
     public static void heapBuffer() {
         ByteBuf heapBuf = BYTE_BUF_FROM_SOMEWHERE; //get reference form somewhere
         if (heapBuf.hasArray()) {
+            System.out.println("Is heapBuf!");
+            byte x[] = {0x01, 0x01, 0x02, 0x71, 0x2b, 0x5f, 0x30};
+            heapBuf.writeBytes(x);
             byte[] array = heapBuf.array();
             int offset = heapBuf.arrayOffset() + heapBuf.readerIndex();
             int length = heapBuf.readableBytes();
+            System.out.println("offset is:" + offset + " and length is:" + length);
+            ByteBuf byteBuf =heapBuf.readBytes(5);
+            byte[] bytes = new byte[byteBuf.readableBytes()];
+            byteBuf.readBytes(bytes);
+            System.out.println("byteBuf.toString()：" + bytes);
+            System.out.println("heapBuf.readByte()" + heapBuf.readByte());
+            offset = heapBuf.arrayOffset() + heapBuf.readerIndex();
+            length = heapBuf.readableBytes();
+            System.out.println("offset is:" + offset + " and length is:" + length);
             handleArray(array, offset, length);
         }
     }
@@ -71,9 +84,13 @@ public class ByteBufExamples {
     public static void directBuffer() {
         ByteBuf directBuf = BYTE_BUF_FROM_SOMEWHERE; //get reference form somewhere
         if (!directBuf.hasArray()) {
+            System.out.println("Is directBuf!");
+            byte x[] = {0x01, 0x01, 0x02, 0x71, 0x2b, 0x5f, 0x30};
+            directBuf.writeBytes(x);
             int length = directBuf.readableBytes();
             byte[] array = new byte[length];
             directBuf.getBytes(directBuf.readerIndex(), array);
+            System.out.println("length is:" + length);
             handleArray(array, 0, length);
         }
     }
@@ -105,7 +122,7 @@ public class ByteBufExamples {
         //...
         messageBuf.removeComponent(0); // remove the header
         for (ByteBuf buf : messageBuf) {
-            System.out.println(buf.toString());
+            System.out.println("Start " + buf.toString() + " End");
         }
     }
 
@@ -125,10 +142,16 @@ public class ByteBufExamples {
      */
     public static void byteBufRelativeAccess() {
         ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE; //get reference form somewhere
+        byte x[] = {0x01, 0x01, 0x02, 0x71, 0x2b, 0x5f, 0x30};
+        buffer.writeBytes(x);
         for (int i = 0; i < buffer.capacity(); i++) {
             byte b = buffer.getByte(i);
-            System.out.println((char) b);
+            System.out.print((char) b);
         }
+        int offset = buffer.arrayOffset() + buffer.readerIndex();
+        int length = buffer.readableBytes();
+        System.out.println();
+        System.out.println("offset is:" + offset + " and length is:" + length);
     }
 
     /**
@@ -136,6 +159,8 @@ public class ByteBufExamples {
      */
     public static void readAllData() {
         ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE; //get reference form somewhere
+        byte x[] = {0x01, 0x01, 0x02, 0x71, 0x2b, 0x5f, 0x30};
+        buffer.writeBytes(x);
         while (buffer.isReadable()) {
             System.out.println(buffer.readByte());
         }
@@ -159,7 +184,11 @@ public class ByteBufExamples {
      */
     public static void byteProcessor() {
         ByteBuf buffer = BYTE_BUF_FROM_SOMEWHERE; //get reference form somewhere
+        byte x[] = {0x01, 0x01, 0x02, 0x71, 0x2b, 0x5f, 0x30};
+        buffer.writeBytes(x);
         int index = buffer.forEachByte(ByteProcessor.FIND_CR);
+        int index2 = buffer.forEachByte(new ByteProcessor.IndexOfProcessor((byte) '_'));
+        System.out.println("index:" + index + " and index2 is:" + index2);
     }
 
     /**
@@ -182,6 +211,10 @@ public class ByteBufExamples {
         System.out.println(sliced.toString(utf8));
         buf.setByte(0, (byte)'J');
         assert buf.getByte(0) == sliced.getByte(0);
+        boolean result = buf.getByte(0) == sliced.getByte(0);
+        System.out.println("buf.getByte(0) == sliced.getByte(0)   " + result);
+        System.out.println(buf.toString(utf8));
+        System.out.println(sliced.toString(utf8));
     }
 
     /**
@@ -194,6 +227,10 @@ public class ByteBufExamples {
         System.out.println(copy.toString(utf8));
         buf.setByte(0, (byte)'J');
         assert buf.getByte(0) != copy.getByte(0);
+        boolean result = buf.getByte(0) == copy.getByte(0);
+        System.out.println("buf.getByte(0) == copy.getByte(0)   " + result);
+        System.out.println(buf.toString(utf8));
+        System.out.println(copy.toString(utf8));
     }
 
     /**
@@ -207,8 +244,11 @@ public class ByteBufExamples {
         int writerIndex = buf.writerIndex();
         buf.setByte(0, (byte)'B');
         System.out.println((char)buf.getByte(0));
+        System.out.println(buf.toString(utf8));
         assert readerIndex == buf.readerIndex();
         assert writerIndex == buf.writerIndex();
+        System.out.println("readerIndex == buf.readerIndex()   " + (readerIndex == buf.readerIndex()));
+        System.out.println("writerIndex == buf.writerIndex()   " + (writerIndex == buf.writerIndex()));
     }
 
     /**
@@ -221,11 +261,16 @@ public class ByteBufExamples {
         int readerIndex = buf.readerIndex();
         int writerIndex = buf.writerIndex();
         buf.writeByte((byte)'?');
+        System.out.println(buf.toString(utf8));
         assert readerIndex == buf.readerIndex();
         assert writerIndex != buf.writerIndex();
+        System.out.println("readerIndex == buf.readerIndex()   " + (readerIndex == buf.readerIndex()));
+        System.out.println("writerIndex == buf.writerIndex()   " + (writerIndex == buf.writerIndex()));
     }
 
-    private static void handleArray(byte[] array, int offset, int len) {}
+    private static void handleArray(byte[] array, int offset, int len) {
+        System.out.println("Do something to handleArray...");
+    }
 
     /**
      * Listing 5.14 Obtaining a ByteBufAllocator reference
@@ -248,6 +293,7 @@ public class ByteBufExamples {
         //...
         ByteBuf buffer = allocator.directBuffer();
         assert buffer.refCnt() == 1;
+        System.out.println("buffer.refCnt():" + buffer.refCnt());
         //...
     }
 
